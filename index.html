@@ -2,14 +2,64 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Programação 23ª CBMC</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Programação CSV</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
   <h1>Programação</h1>
-  <ul id="lista"></ul>
+  <pre id="saida">Carregando...</pre>
 
-  <script src="script.js"></script>
+  <script>
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/1Acs-YjvII2nGi-Hx15RQlaZ3ORfVfrv974Y6u3ASZLI/export?format=csv';
+  
+    function horaStrParaMinutos(horaStr) {
+      const [h, m] = horaStr.split(':').map(Number);
+      return h * 60 + m;
+    }
+  
+    Papa.parse(csvUrl, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        const dados = results.data;
+  
+        // Ordenar dias e horários
+        const diasUnicos = [...new Set(dados.map(d => d.Dias))].filter(d => d).sort((a, b) => Number(a) - Number(b));
+        const horarios = [...new Set(dados.flatMap(d => [d["Horário de Inicio"], d["Horário de Fim"]]))]
+          .filter(h => h)
+          .sort((a, b) => horaStrParaMinutos(a) - horaStrParaMinutos(b));
+  
+        // Criar cabeçalho
+        let tabela = '<table border="1"><thead><tr><th>Horário</th>';
+        diasUnicos.forEach(dia => {
+          const linha = dados.find(d => d.Dias === dia);
+          tabela += `<th>${dia}<br>${linha["Dia da Semana"]}</th>`;
+        });
+        tabela += '</tr></thead><tbody>';
+  
+        // Criar corpo da tabela
+        horarios.forEach(horario => {
+          tabela += `<tr><td>${horario}</td>`;
+          diasUnicos.forEach(dia => {
+            const evento = dados.find(d => d["Horário de Inicio"] === horario && d.Dias === dia);
+            if (evento) {
+              tabela += `<td>
+                <strong>${evento.Programação}</strong><br>
+                ${evento.Evento} – ${evento.Categoria}<br>
+                ${evento["Classificação indicativa"] ? `Classificação: ${evento["Classificação indicativa"]}<br>` : ''}
+                ${evento.Espaço || ''}
+              </td>`;
+            } else {
+              tabela += '<td></td>';
+            }
+          });
+          tabela += '</tr>';
+        });
+  
+        tabela += '</tbody></table>';
+        document.getElementById('saida').innerHTML = tabela;
+      }
+    });
+  </script>
 </body>
 </html>
