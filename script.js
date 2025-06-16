@@ -9,40 +9,55 @@ Papa.parse(csvUrl, {
   download: true,
   header: true,
   complete: function(results) {
-    const dados = results.data;
+    const dados = results.data.filter(e => e.Programacao || e.Programação);
 
-    const diasUnicos = [...new Set(dados.map(d => d.Dias))].filter(d => d).sort((a, b) => Number(a) - Number(b));
-    const horarios = [...new Set(dados.flatMap(d => [d["Horário de Inicio"], d["Horário de Fim"]]))]
-      .filter(h => h)
-      .sort((a, b) => horaStrParaMinutos(a) - horaStrParaMinutos(b));
+    const dias = [...new Set(dados.map(d => d.Dias))].filter(Boolean).sort((a, b) => Number(a) - Number(b));
+    const horaMin = Math.min(...dados.map(d => horaStrParaMinutos(d["Horário de Inicio"])));
+    const horaMax = Math.max(...dados.map(d => horaStrParaMinutos(d["Horário de Fim"])));
 
-    let tabela = '<table border="1" cellspacing="0" cellpadding="0"><thead><tr><th>Horário</th>';
-    diasUnicos.forEach(dia => {
-      const linha = dados.find(d => d.Dias === dia);
-      tabela += `<th>${dia}<br>${linha["Dia da Semana"]}</th>`;
+    const grade = document.getElementById('grade');
+    grade.style.setProperty('--total-minutos', horaMax - horaMin);
+    grade.innerHTML = '';
+
+    const cabecalho = document.createElement('div');
+    cabecalho.className = 'cabecalho';
+    dias.forEach(dia => {
+      const coluna = document.createElement('div');
+      coluna.className = 'coluna-dia';
+      const info = dados.find(d => d.Dias === dia);
+      coluna.innerHTML = `<strong>${dia}</strong><br>${info["Dia da Semana"]}`;
+      cabecalho.appendChild(coluna);
     });
-    tabela += '</tr></thead><tbody>';
+    grade.appendChild(cabecalho);
 
-    horarios.forEach(horario => {
-      tabela += `<tr><td style="padding: 4px; text-align: center;">${horario}</td>`;
-      diasUnicos.forEach(dia => {
-        const evento = dados.find(d => d["Horário de Inicio"] === horario && d.Dias === dia);
-        if (evento) {
-          const linhas = [
-            `<strong>${evento.Programação}</strong>`,
-            `${evento.Evento} – ${evento.Categoria}`,
-            evento["Classificação indicativa"] ? `Classificação: ${evento["Classificação indicativa"]}` : null,
-            evento.Espaço || null,
-          ].filter(Boolean);
-          tabela += `<td style="padding: 4px; text-align: left;">${linhas.join('<br>')}</td>`;
-        } else {
-          tabela += '<td></td>';
-        }
+    const corpo = document.createElement('div');
+    corpo.className = 'corpo';
+    dias.forEach(dia => {
+      const coluna = document.createElement('div');
+      coluna.className = 'coluna';
+      const eventos = dados.filter(d => d.Dias === dia);
+      eventos.forEach(e => {
+        const bloco = document.createElement('div');
+        bloco.className = 'evento';
+
+        const ini = horaStrParaMinutos(e["Horário de Inicio"]);
+        const fim = horaStrParaMinutos(e["Horário de Fim"]);
+        const duracao = fim - ini;
+
+        bloco.style.setProperty('--inicio', ini - horaMin);
+        bloco.style.setProperty('--duracao', duracao);
+
+        bloco.innerHTML = `
+          <strong>${e.Programacao || e.Programação}</strong><br>
+          ${e.Evento} – ${e.Categoria}<br>
+          ${e["Classificação indicativa"] ? `Classificação: ${e["Classificação indicativa"]}<br>` : ''}
+          ${e.Espaço || ''}
+        `;
+
+        coluna.appendChild(bloco);
       });
-      tabela += '</tr>';
+      corpo.appendChild(coluna);
     });
-
-    tabela += '</tbody></table>';
-    document.getElementById('saida').innerHTML = tabela;
+    grade.appendChild(corpo);
   }
 });
