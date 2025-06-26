@@ -3,13 +3,72 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap"
+      rel="stylesheet"
+    />
     <title>Programação 23ª CBMC</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="script.js" defer></script>
   </head>
   <body>
-    <h1>23ª CBMC - Programação</h1>
+    <!--/* <div class="titulo-principal">23ª CBMC - Programação</div> */-->
+    <div class="header-topo">
+      <a
+        href="https://www.coletivoambidestro.org/"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          src="logo.svg"
+          alt="23ª CBMC - Programação"
+          style="
+            display: block;
+            margin-top: 10px;
+            max-width: 600px;
+            height: auto;
+          "
+        />
+      </a>
+      <div class="search-filter">
+        <input
+          type="text"
+          id="busca-input"
+          placeholder="Buscar por nome do evento  🔍︎"
+        />
+        <select id="filtro-tipo">
+          <option value="">Tipo de Evento</option>
+        </select>
+        <select id="filtro-categoria">
+          <option value="">Categoria</option>
+        </select>
+        <select id="filtro-dia">
+          <option value="">Dia da Semana</option>
+        </select>
+        <select id="filtro-espaco">
+          <option value="">Espaço</option>
+        </select>
+        <select id="filtro-classificacao">
+          <option value="">Classificação</option>
+        </select>
+        <select id="filtro-periodo">
+          <option value="">Período</option>
+          <option value="0-1439">Todos</option>
+          <option value="480-660">08:00 - 11:00</option>
+          <option value="660-900">11:00 - 15:00</option>
+          <option value="900-1140">15:00 - 19:00</option>
+          <option value="1140-1439">19:00 - 23:00</option>
+        </select>
+        <div>
+          <button id="aplicar-filtro" style="margin-right: 6px">
+            Aplicar Filtro
+          </button>
+          <button id="limpar-filtro" type="button">Limpar Filtros</button>
+        </div>
+      </div>
+    </div>
+
     <div id="grade" class="grade"></div>
   </body>
 </html>

@@ -1,156 +1,241 @@
-const csvUrl = 'https://docs.google.com/spreadsheets/d/1Acs-YjvII2nGi-Hx15RQlaZ3ORfVfrv974Y6u3ASZLI/export?format=csv';
+document.addEventListener("DOMContentLoaded", function () {
+  const csvUrl = 'https://docs.google.com/spreadsheets/d/1Acs-YjvII2nGi-Hx15RQlaZ3ORfVfrv974Y6u3ASZLI/export?format=csv';
 
-function horaStrParaMinutos(horaStr) {
-  const [h, m] = horaStr.split(':').map(Number);
-  return h * 60 + m;
-}
+  // Filtros
+  let FILTRO = {
+    busca: "",
+    tipo: "",
+    categoria: "",
+    dia: "",
+    espaco: "",
+    classificacao: "",
+    horarioIni: 0,
+    horarioFim: 1439
+  };
+  let ALL_EVENTOS_RAW = []; 
 
-// Gera intervalos de tempo em minutos
-function gerarSlots(horaMin, horaMax, passo = 30) {
-  const slots = [];
-  for(let min = horaMin; min < horaMax; min += passo) {
-    slots.push(min);
+  function minutosToHora(min) {
+    let h = Math.floor(min/60);
+    let m = ""+min%60;
+    return h+":"+("00"+m).slice(-2);
   }
-  return slots;
-}
+  function normalize(str) {
+    return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
 
-function ativaEventoMobile() {
-  // Só em telas pequenas
-  if (window.innerWidth < 700) {
-    document.querySelectorAll('.evento').forEach(ev => {
-      ev.classList.remove('ativo');
-      let evtClone = ev.cloneNode(true);
-      ev.parentNode.replaceChild(evtClone, ev);
-    });
+  // Dias do calendário
+  const dias = [
+    { dia: '12', semana: 'Sábado' },
+    { dia: '13', semana: 'Domingo' },
+    { dia: '14', semana: 'Segunda' },
+    { dia: '15', semana: 'Terça' },
+    { dia: '16', semana: 'Quarta' },
+    { dia: '17', semana: 'Quinta' },
+    { dia: '18', semana: 'Sexta' },
+    { dia: '19', semana: 'Sábado' },
+    { dia: '20', semana: 'Domingo' }
+  ];
 
-    document.querySelectorAll('.evento').forEach(ev => {
-      ev.addEventListener('click', function(e) {
-        document.querySelectorAll('.evento.ativo').forEach(el => { if (el !== ev) el.classList.remove('ativo'); });
-        ev.classList.toggle('ativo');
-        e.stopPropagation();
+  const categoriaCoresBase = {
+    "Varietê":              "#f7a600", // amarelo-laranja vivo
+    "Espetáculo":           "#eb6226", // laranja CBMC
+    "Oficina Curta":        "#2bb9b3", // azul turquesa claro
+    "Oficina Continuada":   "#22566a", // azul petróleo
+    "Show":                 "#d04d43", // vermelho ferrugem
+    "Atividades de Cuidado":"#fff2e6", // bege (pode usar variação clara/escura)
+    "Atividades do Ninho":  "#a67f5e"  // marrom claro/bege (tons de pele)
+  }
+
+  // Funções para derivar tons claros/escuros para a mesma cor base
+  function hexToHsl(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(x=>x+x).join('');
+    let r=parseInt(hex.substr(0,2),16)/255, g=parseInt(hex.substr(2,2),16)/255, b=parseInt(hex.substr(4,2),16)/255;
+    let max=Math.max(r,g,b), min=Math.min(r,g,b), h, s, l=(max+min)/2;
+    if(max==min){h=s=0;}else{
+        let d=max-min;
+        s=l>0.5?d/(2-max-min):d/(max+min);
+        switch(max){
+            case r: h=(g-b)/d+(g<b?6:0);break;
+            case g: h=(b-r)/d+2;break;
+            case b: h=(r-g)/d+4;break;
+        }
+        h/=6;
+    }
+    return [h*360, s*100, l*100];
+  }
+  function shade(color, type){
+    // type = light ou dark
+    let [h,s,l]=hexToHsl(color);
+    if(type==='light') l = Math.min(l+32, 95);
+    else l = Math.max(l-29,18);
+    return `hsl(${h},${Math.round(s)}%,${Math.round(l)}%)`;
+  }
+
+  function horaStrParaMinutos(horaStr) {
+    if (!horaStr) return 0;
+    let [h, m] = horaStr.split(':').map(Number);
+    if (isNaN(h)) return 0;
+    return h * 60 + (m || 0);
+  }
+  function pad2(x) { return String(x).padStart(2, "0"); }
+
+  Papa.parse(csvUrl, {
+    download: true,
+    header: true,
+    complete: function (results) {
+      const dados = results.data.filter(e => (e.Programacao || e["Programação"]));
+
+      // Agrupa eventos: dia → lista
+      const eventosPorDia = {};
+      dias.forEach((d,idx)=>eventosPorDia[d.dia]=[]);
+      dados.forEach(e => {
+        if (!e.Dias) return;
+        const tipo = (e.Evento || e["Evento"] || "Convenção").trim();
+        const categoria = (e.Categoria || e["Categoria"] || "").trim();
+        const diasEvento = (e.Dias + "").split(',').map(dd => dd.trim()).filter(Boolean);
+        const ini = horaStrParaMinutos(e["Horário de Inicio"]);
+        const fim = horaStrParaMinutos(e["Horário de Fim"]);
+        diasEvento.forEach(dia => {
+          if (!eventosPorDia[dia]) return;
+          eventosPorDia[dia].push({
+            categoria, tipo, evento: e, ini, fim, dia
+          });
+        });
       });
-    });
 
-    // Clicar fora de .evento fecha qualquer aberto
-    document.addEventListener('click', fechaTodosEventosMobile);
-
-  } else {
-    document.querySelectorAll('.evento').forEach(ev => ev.classList.remove('ativo'));
-    document.removeEventListener('click', fechaTodosEventosMobile);
-  }
-}
-
-// Função para fechar todos 
-function fechaTodosEventosMobile(e) {
-  if (!e.target.closest('.evento')) {
-    document.querySelectorAll('.evento.ativo').forEach(ev => ev.classList.remove('ativo'));
-  }
-}
-
-Papa.parse(csvUrl, {
-  download: true,
-  header: true,
-  complete: function(results) {
-    const dados = results.data.filter(e => e.Programacao || e.Programação);
-
-    const dias = [...new Set(dados.map(d => d.Dias))].filter(Boolean).sort((a, b) => Number(a) - Number(b));
-    const horaMin = Math.min(...dados.map(d => horaStrParaMinutos(d["Horário de Inicio"])));
-    const horaMax = Math.max(...dados.map(d => horaStrParaMinutos(d["Horário de Fim"]))) + 1;
-    const slots = gerarSlots(horaMin, horaMax, 30); // Intervalo de 30min
-
-    const grade = document.getElementById('grade');
-    grade.innerHTML = '';
-
-    // Cabeçalho
-    const cabecalho = document.createElement('div');
-    cabecalho.className = 'cabecalho';
-
-    const horarioCol = document.createElement('div');
-    horarioCol.className = 'col-horario-cabecalho';
-    horarioCol.textContent = '';
-    cabecalho.appendChild(horarioCol);
-
-    dias.forEach(dia => {
-      const coluna = document.createElement('div');
-      coluna.className = 'coluna-dia';
-      const info = dados.find(d => d.Dias === dia);
-      coluna.innerHTML = `<strong>${dia}</strong><br>${info["Dia da Semana"]}`;
-      cabecalho.appendChild(coluna);
-    });
-    grade.appendChild(cabecalho);
-
-    // Corpo
-    const corpo = document.createElement('div');
-    corpo.className = 'corpo';
-    corpo.style.gridTemplateColumns = `80px repeat(${dias.length}, 1fr)`;
-    cabecalho.style.gridTemplateColumns = corpo.style.gridTemplateColumns;
-    // corpo.style.gridTemplateRows = `repeat(${slots.length}, 1fr)`;
-
-    // Coluna dos horários
-    slots.forEach((min, i) => {
-      const div = document.createElement('div');
-      div.className = 'cell cell-horario';
-      const h = Math.floor(min/60);
-      const m = String(min%60).padStart(2,'0');
-      div.textContent = `${h}:${m}`;
-      div.style.gridRow = i+1;
-      div.style.gridColumn = 1;
-      corpo.appendChild(div);
-    });
-
-    // Criação das células de dias/horários
-    dias.forEach((dia, diaIdx) => {
-      slots.forEach((min, slotIdx) => {
-        const cell = document.createElement('div');
-        cell.className = 'cell cell-dia';
-        cell.style.gridRow = slotIdx+1;
-        cell.style.gridColumn = diaIdx+2;
-        cell.dataset.dia = dia;
-        cell.dataset.min = min;
-        corpo.appendChild(cell);
-      });
-    });
-
-    // Posicionamento dos eventos
-    dados.forEach(e => {
-      const ini = horaStrParaMinutos(e["Horário de Inicio"]);
-      const fim = horaStrParaMinutos(e["Horário de Fim"]);
-
-      const dia = e.Dias;
-      const info = dados.find(d => d.Dias === dia);
-
-      // Slot inicial
-      let slotIni = null;
-      for (let i=0; i < slots.length; ++i) {
-        if (ini >= slots[i] && (i==slots.length-1 || ini < slots[i+1])) slotIni = i;
+      // Agrupa por faixa de período (mesmo ini/fim)
+      function agruparPorPeriodo(lista) {
+        lista.sort((a,b)=>a.ini-b.ini || a.fim-b.fim);
+        const grupos = [];
+        let atual = [];
+        let curIni = null, curFim = null;
+        for (const ev of lista) {
+          if (curIni==null) {
+            curIni = ev.ini; curFim = ev.fim; atual.push(ev);
+          } else if (ev.ini===curIni && ev.fim===curFim) {
+            atual.push(ev);
+          } else {
+            grupos.push({ini:curIni, fim:curFim, eventos: atual});
+            atual = [ev]; curIni = ev.ini; curFim = ev.fim;
+          }
+        }
+        if (atual.length) grupos.push({ini:curIni, fim:curFim, eventos:atual});
+        return grupos;
       }
-      const cellSelector = `.cell-dia[data-dia="${dia}"][data-min="${slots[slotIni]}"]`;
-      const cell = corpo.querySelector(cellSelector);
 
-      const bloco = document.createElement('div');
-      bloco.className = 'evento';
-      bloco.innerHTML = `
-        <div class="evento-title">${e.Programacao || e.Programação}</div>
-        <div class="evento-detalhes">
-          <div class="evento-det-title">${e.Programacao || e.Programação}</div>
-          <div class="evento-data">${info["Dia da Semana"] ? info["Dia da Semana"] : ""} - ${dia}</div>
-          ${e.Evento ? `<div><strong>Evento:</strong> <div class="evento-nome">${e.Evento}</div></div>` : ''}
-          ${e.Categoria ? `<div><strong>Categoria:</strong> <div class="evento-categoria">${e.Categoria}</div></div>` : ''}
-          <div>
-            <strong>Horário:</strong> <div class="evento-hora">${e["Horário de Inicio"]} - ${e["Horário de Fim"]}</div>
-          </div>
-          ${e["Classificação indicativa"] ? `<div><strong>Classificação:</strong> <div class="evento-classificacao">${e["Classificação indicativa"]}</div></div>` : ''}
-          ${e.Espaço ? `<div><strong>Espaço:</strong> <div class="evento-espaco">${e.Espaço}</div></div>` : ''}
-        </div>
-      `;
+      ALL_EVENTOS_RAW = dados.map(e=>{
+        return {
+          ...e,
+          tipo : (e.Evento || e["Evento"] || "").trim(),
+          categoria : (e.Categoria || e["Categoria"] || "").trim(),
+          dias : (e.Dias + ""),
+          diaSemana: (e["Dia da Semana"]||""),
+          espaco: (e.Espaço || e["Espaço"] || ""),
+          classificacao: (e["Classificação indicativa"]||""),
+          horarioIniMin: horaStrParaMinutos(e["Horário de Inicio"] || ""),
+          horarioFimMin: horaStrParaMinutos(e["Horário de Fim"] || ""),
+          titulo: (e.Programacao || e["Programação"] || "")
+        }
+      });
 
-      if (cell) cell.appendChild(bloco);
-    });
+      // Render na pagina por dia
+      const grade = document.getElementById('grade');
+      grade.innerHTML = '';
+      dias.forEach(({dia,semana})=>{
+        const faixa = eventosPorDia[dia];
+        // Wrapper de tudo do dia
+        const wrapperDia = document.createElement('div');
+        wrapperDia.className = 'dia-wrapper';
 
-    grade.appendChild(corpo);
+        // Header do dia + seta dropdown
+        const h2 = document.createElement('div');
+        h2.className = 'titulo-dia-colapsavel';
+        h2.innerHTML = `
+          <span>${dia}/07 - ${semana}</span>
+          <span class="seta-dia">➲</span>
+        `;
+        wrapperDia.appendChild(h2);
 
-    ativaEventoMobile();
-  }
+        // Wrapper para grupos desse dia
+        const grupoBox = document.createElement('div');
+        grupoBox.className = 'grupo-eventos-dia-wrapper';
+        wrapperDia.appendChild(grupoBox);
+
+        // Adicione os grupos
+        if (!faixa.length) {
+          const vazio = document.createElement('div');
+          vazio.className = 'sem-eventos';
+          vazio.textContent = 'Nenhum evento';
+          grupoBox.appendChild(vazio);
+        } else {
+          const grupos = agruparPorPeriodo(faixa);
+          grupos.forEach(grp=>{
+            const bloco = document.createElement('div');
+            bloco.className = 'grupo-eventos-dia';
+
+            // Horário
+            const horaLabel = `${pad2(Math.floor(grp.ini/60))}:${pad2(grp.ini%60)} - ${pad2(Math.floor(grp.fim/60))}:${pad2(grp.fim%60)}`;
+            bloco.innerHTML = `<div class="grupo-eventos-titulo"><div>${horaLabel}</div><span>${grp.eventos.length} evento${grp.eventos.length>1? "s": ""}</span></div>`;
+
+            // Minis por evento
+            const minigrid = document.createElement('div');
+            minigrid.className = "grupo-eventos-minis";
+            grp.eventos.forEach(({categoria, tipo, evento: e})=>{
+              const corBase = categoriaCoresBase[categoria] || "#bbb";
+              const isFestival = tipo.toLowerCase().includes('festival');
+              const bg = isFestival ? shade(corBase,'dark') : shade(corBase,'light');
+              const fg = isFestival ? "#fff" : "#111";
+              // extras:
+              const camposPrincipais = [
+                "Programacao", "Programação", "Dias", "Horário de Inicio", "Horário de Fim", "Dia da Semana", "Evento", "Categoria", "Classificação indicativa", "Espaço", "Elenco", "Obs"
+              ];
+              const extras = Object.keys(e).filter(key => !camposPrincipais.includes(key) && e[key] && e[key].trim() !== '');
+              const extrasHtml = extras.map(key =>
+                `<div><strong>${key.replace(/_/g, ' ')}:</strong> <div>${e[key]}</div></div>`
+              ).join('');
+              // Mini bloco
+              const mini = document.createElement('div');
+              mini.className = "mini-evento";
+              mini.style.background = bg;
+              mini.style.color = fg;
+              mini.innerHTML = `
+                <div class="mini-evento-title">${e.Programacao || e.Programação}</div>
+                <div class="mini-evento-categoria">${categoria}</div>
+                <div class="mini-evento-detalhes">
+                  <div><strong>Tipo:</strong> <div>${tipo}</div></div>
+                  ${e.Espaço ? `<div><strong>Espaço:</strong> <div>${e.Espaço}</div></div>` : ''}
+                  <div><strong>Horário:</strong> <div>${e["Horário de Inicio"]} - ${e["Horário de Fim"]}</div></div>
+                  ${e["Classificação indicativa"] ? `<div><strong>Classificação:</strong> <div>${e["Classificação indicativa"]}</div></div>` : ''}
+                  ${extrasHtml}
+                  ${e.Obs ? `<div><strong>Obs:</strong> <div>${e.Obs}</div></div>` : ''}
+                </div>
+              `;
+
+              mini.addEventListener('click', function(e){
+                e.stopPropagation(); // não propaga para o grupo
+                mini.classList.toggle('ativo');
+              });
+              
+              minigrid.appendChild(mini);
+            });
+            bloco.appendChild(minigrid);
+
+            grupoBox.appendChild(bloco);
+          });
+        }
+        grade.appendChild(wrapperDia);
+
+        // Dropdown toggle
+        h2.addEventListener('click', function(){
+          grupoBox.classList.toggle("fechado");
+          h2.querySelector('.seta-dia').classList.toggle("fechado");
+        });
+
+      });
+
+      
+      
+    }
+  });
 });
-
-window.addEventListener('resize', ativaEventoMobile);
