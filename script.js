@@ -222,6 +222,7 @@ document.addEventListener("DOMContentLoaded", function () {
                   ${e["Classificação indicativa"] ? `<div><strong>Classificação:</strong> <div>${e["Classificação indicativa"]}</div></div>` : ''}
                   ${extrasHtml}
                   ${e.Obs ? `<div><strong>Obs:</strong> <div>${e.Obs}</div></div>` : ''}
+                  ${e.Elenco ? `<div><strong>Elenco:</strong> <div>${e.Elenco}</div></div>` : ''}
                 </div>
               `;
 
