@@ -1,5 +1,15 @@
 @import url('https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap');
 
+:root {
+  --cor-variete: #f7a600;
+  --cor-espetaculo: #eb6226;
+  --cor-oficina-curta: #32d1c9;
+  --cor-oficina-continuada: #2a667e;
+  --cor-show: #d04d43;
+  --cor-atividades-cuidado: #fff2e6;
+  --cor-atividades-ninho: #a67f5e;
+}
+
 body {
   font-family: 'Inter', 'Montserrat', Arial, sans-serif;
 }

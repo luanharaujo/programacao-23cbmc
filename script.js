@@ -36,6 +36,19 @@ document.addEventListener("DOMContentLoaded", function () {
     { dia: '20', semana: 'Domingo' }
   ];
 
+  function corCategoria(nome) {
+    // Transformar nome em slug do CSS
+    let key = nome
+      .replace(/ã/g,"a")
+      .replace(/[éê]/g,"e")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g,"-")
+      .replace(/-+/g,"-")
+      .replace(/(^-|-$)/g,"");
+    let cssVar = "--cor-" + key;
+    return getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || "#bbb";
+  }
+
   const categoriaCoresBase = {
     "Varietê":              "#f7a600", // amarelo-laranja vivo
     "Espetáculo":           "#eb6226", // laranja CBMC
@@ -182,7 +195,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const minigrid = document.createElement('div');
             minigrid.className = "grupo-eventos-minis";
             grp.eventos.forEach(({categoria, tipo, evento: e})=>{
-              const corBase = categoriaCoresBase[categoria] || "#bbb";
+              const corBase = corCategoria(categoria);
               const isFestival = tipo.toLowerCase().includes('festival');
               const bg = isFestival ? shade(corBase,'dark') : shade(corBase,'light');
               const fg = isFestival ? "#fff" : "#111";
