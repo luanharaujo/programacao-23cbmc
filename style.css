@@ -230,4 +230,5 @@ body {
 
 @media (max-width:570px){
   .mini-evento {min-width:120px; max-width:93vw;}
+  .search-filter { display: none !important;}
 }
