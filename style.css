@@ -23,7 +23,7 @@ body {
   margin: 14px 10px 10px 10px;
   max-width: 950px;
 }
-.search-filter input[type="text"] {
+.search-filter busca-input {
   font-size: 1em;
   padding: 8px 10px;
   border-radius: 5px;
@@ -35,6 +35,41 @@ body {
   padding: 7px 10px;
   border-radius: 5px; border: 1px solid #bbc;
 }
+#limpar-filtro {
+  display: none;
+}
+#search-form {
+  background: #f7f7fb;
+  border-radius: 10px;
+  width: 500px;
+}
+#search-form input[type="search"] {
+  font-size: 1em;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid #bbc;
+  outline: none;
+  transition: border-color .2s;
+  flex: 1 0 160px;
+}
+#search-form input[type="search"]:focus {
+  border-color: #3492f0;
+}
+#search-form button[type="submit"] {
+  background: #d4d3d3;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.2em;
+  width: 35px; height: 35px;
+  cursor: pointer;
+  transition: background .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+#search-form button[type="submit"]:hover {
+  background: #22566a;
+}
+
 
 
 .titulo-principal {

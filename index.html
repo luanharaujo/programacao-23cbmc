@@ -32,34 +32,47 @@
         />
       </a>
       <div class="search-filter">
-        <input
-          type="text"
-          id="busca-input"
-          placeholder="Buscar por nome do evento  🔍︎"
-        />
-        <select id="filtro-tipo">
-          <option value="">Tipo de Evento</option>
-        </select>
-        <select id="filtro-categoria">
-          <option value="">Categoria</option>
-        </select>
-        <select id="filtro-dia">
-          <option value="">Dia da Semana</option>
-        </select>
-        <select id="filtro-espaco">
-          <option value="">Espaço</option>
-        </select>
-        <select id="filtro-classificacao">
-          <option value="">Classificação</option>
-        </select>
-        <select id="filtro-periodo">
-          <option value="">Período</option>
-          <option value="0-1439">Todos</option>
-          <option value="480-660">08:00 - 11:00</option>
-          <option value="660-900">11:00 - 15:00</option>
-          <option value="900-1140">15:00 - 19:00</option>
-          <option value="1140-1439">19:00 - 23:00</option>
-        </select>
+        <form
+          role="search"
+          id="search-form"
+          style="display: flex; gap: 8px; align-items: center"
+        >
+          <input
+            type="search"
+            id="busca-input"
+            placeholder="Buscar por nome do evento"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="submit" id="botao-busca" title="Buscar">🔍︎</button>
+        </form>
+        <div>
+          <select id="filtro-tipo">
+            <option value="">Tipo de Evento</option>
+          </select>
+          <select id="filtro-categoria">
+            <option value="">Categoria</option>
+          </select>
+          <select id="filtro-dia">
+            <option value="">Dia da Semana</option>
+          </select>
+        </div>
+        <div>
+          <select id="filtro-espaco">
+            <option value="">Espaço</option>
+          </select>
+          <select id="filtro-classificacao">
+            <option value="">Classificação</option>
+          </select>
+          <select id="filtro-periodo">
+            <option value="">Período</option>
+            <option value="0-1439">Todos</option>
+            <option value="480-660">08:00 - 11:00</option>
+            <option value="660-900">11:00 - 15:00</option>
+            <option value="900-1140">15:00 - 19:00</option>
+            <option value="1140-1439">19:00 - 23:00</option>
+          </select>
+        </div>
         <div>
           <button id="aplicar-filtro" style="margin-right: 6px">
             Aplicar Filtro
