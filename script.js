@@ -216,7 +216,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <div class="mini-evento-title">${e.Programacao || e.Programação}</div>
                 <div class="mini-evento-categoria">${categoria}</div>
                 <div class="mini-evento-detalhes">
-                  <div><strong>Tipo:</strong> <div>${tipo}</div></div>
+                  <div><strong>Evento:</strong> <div>${tipo}</div></div>
                   ${e.Espaço ? `<div><strong>Espaço:</strong> <div>${e.Espaço}</div></div>` : ''}
                   <div><strong>Horário:</strong> <div>${e["Horário de Inicio"]} - ${e["Horário de Fim"]}</div></div>
                   ${e["Classificação indicativa"] ? `<div><strong>Classificação:</strong> <div>${e["Classificação indicativa"]}</div></div>` : ''}
