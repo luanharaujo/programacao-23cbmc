@@ -39,12 +39,14 @@ document.addEventListener("DOMContentLoaded", function () {
   function corCategoria(nome) {
     // Transformar nome em slug do CSS
     let key = nome
-      .replace(/ã/g,"a")
-      .replace(/[éê]/g,"e")
+      .normalize("NFD")                   // separa letras de acentos
+      .replace(/[\u0300-\u036f]/g, "")   // remove os acentos
+      .replace(/ç/g, "c")                // trata o cedilha
+      .replace(/Ç/g, "c")
       .toLowerCase()
-      .replace(/[^a-z0-9]/g,"-")
-      .replace(/-+/g,"-")
-      .replace(/(^-|-$)/g,"");
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/(^-|-$)/g, "");
     let cssVar = "--cor-" + key;
     return getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || "#bbb";
   }
